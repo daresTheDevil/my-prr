@@ -1,0 +1,55 @@
+# Pearl River Resort Integration Platform (PRRIP)
+
+## Overview
+
+The Pearl River Resort Integration Platform (PRRIP) is a modern, service-oriented application designed to integrate various data sources and legacy systems, providing a unified platform for data processing, API access, and front-end applications including reporting and documentation.
+
+This project is built as a monorepo using pnpm and Turborepo, emphasizing a consolidated architecture primarily leveraging the Remix.run framework (Epic Stack) for its core functionalities.
+
+## Guiding Principles
+
+*   **Consolidated Architecture:** Leverage the Remix Epic Stack for as much functionality as possible to simplify development, deployment, and maintenance.
+*   **Developer Experience:** Utilize Devcontainers for a consistent development environment and enforce Conventional Commits for clear version history and automated changelogs.
+*   **Scalability & Deployability:** Design for local Docker-based development, with a clear path to on-premise Kubernetes and future Azure cloud deployments, managed via environment variables.
+*   **Modularity:** While consolidated, logical components within the Remix application will be clearly defined and documented.
+*   **Observability:** Integrate comprehensive logging, error tracking, and metrics.
+
+## Core Technologies
+
+*   **Monorepo:** pnpm, Turborepo
+*   **Application Framework:** Remix.run (Epic Stack - TypeScript/Node.js)
+*   **Database ORM:** Prisma
+*   **Primary Database:** PostgreSQL
+*   **Caching:** Redis
+*   **Messaging:** RabbitMQ
+*   **Development Environment:** Docker, Devcontainers
+*   **CI/CD:**
+    *   Initial: GitLab CI
+    *   Future Migration: GitHub Actions / Azure DevOps
+*   **Version Control:** Git, Conventional Commits
+
+## Project Structure
+
+*   `packages/`: Contains the core Remix application and any other distinct packages.
+    *   `core-app/`: The main Remix (Epic Stack) application housing most of the platform's logic.
+*   `apps/`: If any truly separate applications are needed in the future (e.g., a standalone utility).
+*   `docs/`: Contains detailed architecture documentation, service descriptions, and decision records.
+    *   `architecture/`: Detailed architecture documents.
+    *   `services/`: READMEs for logical services/components.
+    *   `cicd/`: CI/CD setup and migration notes.
+
+## Getting Started
+
+(Details to be added once initial setup is complete - e.g., cloning, pnpm install, devcontainer instructions, running the application).
+
+## Architecture
+
+For a detailed overview of the system architecture, please see [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md).
+
+Individual component details can be found in `docs/services/`.
+CI/CD documentation can be found in [`docs/cicd/README.md`](docs/cicd/README.md).
+
+## Contributing
+
+Please follow Conventional Commits guidelines.
+(Further contribution guidelines to be added).
