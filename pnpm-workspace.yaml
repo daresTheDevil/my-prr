@@ -1,0 +1,5 @@
+packages:
+  - 'packages/*'
+  - 'apps/*'
+  # you can also include other directories, like 'docs', if they are pnpm packages
+  # - 'docs'
