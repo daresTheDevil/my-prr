@@ -1,0 +1,143 @@
+# Docker Compose configuration for local development of the PRRIP Monorepo.
+# This file defines the services needed to run the core application and its dependencies.
+version: '3.8'
+
+services:
+  # The main PRRIP Core Application (Remix/Epic Stack)
+  core-app:
+    image: node:22-bookworm-slim  # Use a standard Node.js base image for development
+    container_name: prrip_core_app_dev
+    working_dir: /workspace        # Set the working directory inside the container to the monorepo root
+    # Command to execute when the container starts:
+    # 1. Installs dependencies using pnpm (if not already up-to-date via lockfile).
+    # 2. Starts the development server for the core-app via the root pnpm script (delegated by Turbo).
+    command: sh -c "pnpm install --frozen-lockfile && pnpm run dev"
+    volumes:
+      # Mount the entire current directory (monorepo root) into /workspace in the container.
+      # ':cached' can improve performance on macOS/Windows.
+      - .:/workspace:cached
+      # Use an anonymous volume for root node_modules. This prevents the host's node_modules
+      # (if any) from overwriting the one installed inside the container, which is crucial
+      # if the host OS is different from the container's OS (Linux).
+      - /workspace/node_modules
+      # Similarly, use an anonymous volume for the core-app's specific node_modules.
+      - /workspace/packages/core-app/node_modules
+    ports:
+      # Map port 3000 on the host to port 3000 in the container (for the Remix app).
+      - "3000:3000"
+      # Map port 9229 for Node.js debugging.
+      - "9229:9229"
+    environment:
+      # Set Node.js environment to development mode.
+      - NODE_ENV=development
+      # --- Connection URLs for backing services ---
+      # These URLs point to the service names defined in this docker-compose file.
+      # The core-app needs to be configured to use these environment variables.
+      - DATABASE_URL=postgresql://prripuser:prrippassword@postgres_db:5432/prripdb?schema=public
+      - REDIS_URL=redis://redis_db:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq_broker:5672
+      # --- Application Specific Environment Variables ---
+      # Add other environment variables required by the core-app.
+      # These should ideally be sourced from a .env file that the application loads.
+      # For development, you can set them here or manage them via a .env file
+      # that's part of the .gitignore and sourced by the devcontainer/application.
+      # Example (refer to packages/core-app/.env.example):
+      # SESSION_SECRET=your_dev_session_secret_here_make_it_long_and_random
+      # SENTRY_DSN=
+      # RESEND_API_KEY=
+      # GITHUB_CLIENT_ID=
+      # GITHUB_CLIENT_SECRET=
+      # etc.
+    depends_on:
+      # Ensures that backing services are healthy before the core-app starts.
+      postgres_db:
+        condition: service_healthy
+      redis_db:
+        condition: service_healthy
+      rabbitmq_broker:
+        condition: service_healthy
+    networks:
+      # Connects this service to the prrip_network.
+      - prrip_network
+
+  # PostgreSQL Database Service
+  postgres_db:
+    image: postgres:16-alpine  # Use a specific version of PostgreSQL
+    container_name: prrip_postgres_db
+    ports:
+      # Map port 5432 on the host to port 5432 in the container.
+      - "5432:5432"
+    environment:
+      # Credentials for the PostgreSQL database.
+      - POSTGRES_USER=prripuser
+      - POSTGRES_PASSWORD=prrippassword
+      - POSTGRES_DB=prripdb         # Database name
+    volumes:
+      # Persist PostgreSQL data across container restarts.
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - prrip_network
+    healthcheck:
+      # Checks if the PostgreSQL server is ready to accept connections.
+      test: ["CMD-SHELL", "pg_isready -U prripuser -d prripdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache Service
+  redis_db:
+    image: redis:7-alpine      # Use a specific version of Redis
+    container_name: prrip_redis_db
+    ports:
+      # Map port 6379 on the host to port 6379 in the container.
+      - "6379:6379"
+    volumes:
+      # Persist Redis data across container restarts.
+      - redis_data:/data
+    networks:
+      - prrip_network
+    healthcheck:
+      # Checks if the Redis server is responsive.
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ Message Broker Service
+  rabbitmq_broker:
+    image: rabbitmq:3.13-management-alpine # Use RabbitMQ with the management plugin
+    container_name: prrip_rabbitmq_broker
+    ports:
+      # Map port 5672 for AMQP protocol.
+      - "5672:5672"
+      # Map port 15672 for the RabbitMQ Management UI (accessible at http://localhost:15672).
+      - "15672:15672"
+    environment:
+      # Default credentials for RabbitMQ (guest/guest).
+      # For production, these should be changed and managed securely.
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      # Persist RabbitMQ data across container restarts.
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - prrip_network
+    healthcheck:
+      # Checks if the RabbitMQ server is healthy.
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Named volumes for data persistence.
+# Data stored in these volumes will remain even if containers are stopped or removed.
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+
+# Custom bridge network for inter-service communication.
+# Services on the same bridge network can reach each other by their service name.
+networks:
+  prrip_network:
+    driver: bridge
