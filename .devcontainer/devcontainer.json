@@ -33,39 +33,47 @@
         "version": "latest"
     }
   },
-  // VS Code settings to apply specifically within the dev container.
-  "settings": {
-    "terminal.integrated.defaultProfile.linux": "bash", // node:slim images have bash
-    "terminal.integrated.profiles.linux": {
-        "bash": {
-            "path": "/bin/bash"
-        }
-    },
-    // Add any other VS Code settings beneficial for this project
-    "eslint.workingDirectories": [
-        { "directory": "/workspace/packages/core-app", "changeProcessCWD": true }
-    ],
-    "typescript.tsdk": "/workspace/node_modules/typescript/lib" // Point to workspace TypeScript
+  // VS Code specific customizations
+  "customizations": {
+    "vscode": {
+      // VS Code settings to apply specifically within the dev container.
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash", // node:slim images have bash
+        "terminal.integrated.profiles.linux": {
+            "bash": {
+                "path": "/bin/bash"
+            }
+        },
+        // Add any other VS Code settings beneficial for this project
+        "eslint.workingDirectories": [
+            { "directory": "/workspace/packages/core-app", "changeProcessCWD": true }
+        ],
+        "typescript.tsdk": "/workspace/node_modules/typescript/lib" // Point to workspace TypeScript
+      },
+      // VS Code extensions to install in the dev container.
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "prisma.prisma",
+        "humao.rest-client",
+        "ms-azuretools.vscode-docker",
+        "redhat.vscode-yaml",
+        "github.vscode-github-actions",
+        "mhutchie.git-graph",
+        "eamodio.gitlens",
+        "Markdoc.markdoc-vscode",
+        "bradlc.vscode-tailwindcss", // Epic Stack uses Tailwind
+        "Orta.vscode-jest" // For Vitest/Jest test running
+      ]
+    }
   },
-  // VS Code extensions to install in the dev container.
-  "extensions": [
-    "dbaeumer.vscode-eslint",
-    "esbenp.prettier-vscode",
-    "prisma.prisma",
-    "humao.rest-client",
-    "ms-azuretools.vscode-docker",
-    "redhat.vscode-yaml",
-    "github.vscode-github-actions",
-    "mhutchie.git-graph",
-    "eamodio.gitlens",
-    "Markdoc.markdoc-vscode",
-    "bradlc.vscode-tailwindcss", // Epic Stack uses Tailwind
-    "Orta.vscode-jest" // For Vitest/Jest test running
-  ],
   // Commands to run after the container is created.
   // This runs once when the container is built or rebuilt.
-  // It ensures Prisma generates the client based on the schema and applies migrations.
-  "postCreateCommand": "pnpm --filter core-app-2ece exec prisma migrate dev --name init_dev_db && pnpm --filter core-app-2ece exec prisma generate",
+  // 1. Install all pnpm dependencies for the monorepo.
+  // 2. Run Prisma migrations for the core-app.
+  // 3. Generate the Prisma client for the core-app.
+  // 4. Seed the database for the core-app.
+  "postCreateCommand": "pnpm install --frozen-lockfile && pnpm --filter core-app-2ece exec prisma migrate dev --name init_dev_db && pnpm --filter core-app-2ece exec prisma generate && pnpm --filter core-app-2ece exec prisma db seed",
   // User to run as inside the container.
   // The 'node' user is created by the official Node.js images.
   "remoteUser": "node"

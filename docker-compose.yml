@@ -9,9 +9,9 @@ services:
     container_name: prrip_core_app_dev
     working_dir: /workspace        # Set the working directory inside the container to the monorepo root
     # Command to execute when the container starts:
-    # 1. Installs dependencies using pnpm (if not already up-to-date via lockfile).
-    # 2. Starts the development server for the core-app via the root pnpm script (delegated by Turbo).
-    command: sh -c "pnpm install --frozen-lockfile && pnpm run dev"
+    # Starts the development server for the core-app via the root pnpm script (delegated by Turbo).
+    # Dependencies are expected to be installed via devcontainer's postCreateCommand.
+    command: pnpm run dev
     volumes:
       # Mount the entire current directory (monorepo root) into /workspace in the container.
       # ':cached' can improve performance on macOS/Windows.
@@ -22,6 +22,8 @@ services:
       - /workspace/node_modules
       # Similarly, use an anonymous volume for the core-app's specific node_modules.
       - /workspace/packages/core-app/node_modules
+      # Persist Turborepo cache across container rebuilds for faster subsequent builds.
+      - turbo_cache:/workspace/.turbo
     ports:
       # Map port 3000 on the host to port 3000 in the container (for the Remix app).
       - "3000:3000"
@@ -135,6 +137,7 @@ volumes:
   postgres_data:
   redis_data:
   rabbitmq_data:
+  turbo_cache: # Volume for Turborepo cache
 
 # Custom bridge network for inter-service communication.
 # Services on the same bridge network can reach each other by their service name.
